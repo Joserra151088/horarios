@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal de Horarios – CDMX</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header>
+      <!-- NUEVA COLUMNA IZQUIERDA DE LOGOS -->
+      <div class="logo-strip" aria-label="Logos institucionales">
+        <img src="logo1.png" alt="Logo 1" class="logo-item" />
+        <img src="logo2.png" alt="Logo 2" class="logo-item" />
+        <img src="logo3.png" alt="Logo 3" class="logo-item" />
+        <img src="logo4.png" alt="Logo 4" class="logo-item" />
+      </div>
+
+      <div class="brand" title="Gestión de horarios">
+        <span class="dot" aria-hidden="true"></span>
+        <span>Portal de Horarios</span>
+      </div>
+
+      <div class="clock" aria-live="polite">
+        <span id="clock-time">--:--:--</span>
+        <small>CDMX</small>
+      </div>
+    </header>
+
+    <!-- CONTENIDO CENTRAL -->
+    <main>
+      <div class="center-wrap">
+        <div class="search-add center-bar">
+          <input id="searchInput" type="text" placeholder="Buscar personal…" aria-label="Buscar personal" />
+          <button id="addBtn" class="btn btn-primary" type="button">Agregar</button>
+        </div>
+
+        <section class="people-center">
+          <h3 class="section-title">Personal</h3>
+          <div class="people-grid" id="peopleList" role="list" aria-label="Listado de personal"></div>
+          <p class="muted helper-center">
+            <span class="dot on small"></span> Activo ahora &nbsp;|&nbsp;
+            <span class="dot off small"></span> Inactivo · Soporta tramos nocturnos
+          </p>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- PANEL INFERIOR -->
+  <div id="bottomSheet" class="bottom-sheet" aria-hidden="true">
+    <div class="sheet-handle" aria-hidden="true"></div>
+
+    <div class="sheet-header">
+      <div class="person-title">
+        <span id="editorName">—</span>
+        <span id="liveBadge" class="badge">Estado: <strong id="liveStatus">—</strong></span>
+      </div>
+      <div class="sheet-actions">
+        <button id="compactToggle" class="btn" type="button">Compactar</button>
+        <button id="saveBtn" class="btn btn-primary" type="button">Guardar</button>
+        <button id="deleteBtn" class="btn btn-danger" type="button">Eliminar</button>
+        <button id="closeSheetBtn" class="btn" type="button" aria-label="Cerrar editor">Cerrar</button>
+      </div>
+    </div>
+
+    <div id="scheduleForm" class="schedule-form" aria-live="polite"></div>
+  </div>
+
+  <!-- BOTÓN FLOTANTE -->
+  <button id="openSheetBtn" class="fab" aria-label="Abrir editor" title="Abrir editor">⚙️</button>
+
+  <!-- Importante: db.js antes que app.js -->
+  <script src="db.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
