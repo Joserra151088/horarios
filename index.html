@@ -9,7 +9,6 @@
 <body>
   <div class="app">
     <header>
-      <!-- NUEVA COLUMNA IZQUIERDA DE LOGOS -->
       <div class="logo-strip" aria-label="Logos institucionales">
         <img src="logo1.png" alt="Logo 1" class="logo-item" />
         <img src="logo2.png" alt="Logo 2" class="logo-item" />
@@ -34,14 +33,21 @@
         <div class="search-add center-bar">
           <input id="searchInput" type="text" placeholder="Buscar personal…" aria-label="Buscar personal" />
           <button id="addBtn" class="btn btn-primary" type="button">Agregar</button>
+          <button id="exportBtn" class="btn" type="button" title="Exporta los datos actuales a un archivo db.js">Exportar db.js</button>
         </div>
 
+        <!-- Sección: Coordinadores -->
         <section class="people-center">
-          <h3 class="section-title">Personal</h3>
-          <div class="people-grid" id="peopleList" role="list" aria-label="Listado de personal"></div>
-          <p class="muted helper-center">
-            <span class="dot on small"></span> Activo ahora &nbsp;|&nbsp;
-            <span class="dot off small"></span> Inactivo · Soporta tramos nocturnos
+          <h3 class="section-title">Coordinadores</h3>
+          <div class="people-grid" id="coordinatorsList" role="list" aria-label="Listado de coordinadores"></div>
+        </section>
+
+        <!-- Sección: Médicos -->
+        <section class="people-center" style="margin-top:16px">
+          <h3 class="section-title">Médicos</h3>
+          <div class="people-grid" id="doctorsList" role="list" aria-label="Listado de médicos"></div>
+          <p class="muted helper-center" style="margin-top:12px">
+            <span class="dot on small"></span> Activo ahora · <span class="dot off small"></span> Inactivo · Soporta tramos nocturnos
           </p>
         </section>
       </div>
@@ -51,7 +57,6 @@
   <!-- PANEL INFERIOR -->
   <div id="bottomSheet" class="bottom-sheet" aria-hidden="true">
     <div class="sheet-handle" aria-hidden="true"></div>
-
     <div class="sheet-header">
       <div class="person-title">
         <span id="editorName">—</span>
@@ -64,7 +69,6 @@
         <button id="closeSheetBtn" class="btn" type="button" aria-label="Cerrar editor">Cerrar</button>
       </div>
     </div>
-
     <div id="scheduleForm" class="schedule-form" aria-live="polite"></div>
   </div>
 
