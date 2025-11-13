@@ -1,9 +1,9 @@
 /*
-  app.js (layout: lista central + editor en bottom sheet)
-  - Depende de window.DB_API expuesto por db.js
+  app.js — Dos secciones: Coordinadores y Médicos + Exportar db.js
+  Depende de window.DB_API (db.js). BD en localStorage; export a archivo db.js con los datos actuales.
 */
 (function(){
-  const { loadDB, saveDB } = window.DB_API;
+  const { loadDB, saveDB, STORAGE_KEY } = window.DB_API;
 
   const TZ = 'America/Mexico_City';
   const DAY_LABELS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
@@ -37,26 +37,31 @@
   let selectedId = null;
 
   // DOM
-  let elClock, elPeopleList, elSearch, elAdd;
+  let elClock, elSearch, elAdd, elExport;
+  let elCoordList, elDocsList;
   let elEditorName, elLiveBadge, elLiveStatus, elScheduleForm;
-  let elSave, elDelete, elOpenSheet, elCloseSheet, elBottomSheet;
+  let elSave, elDelete, elOpenSheet, elCloseSheet, elBottomSheet, elCompactToggle;
 
   function cacheDom(){
-    elClock = document.getElementById('clock-time');
-    elPeopleList = document.getElementById('peopleList');
+    elClock  = document.getElementById('clock-time');
     elSearch = document.getElementById('searchInput');
-    elAdd = document.getElementById('addBtn');
+    elAdd    = document.getElementById('addBtn');
+    elExport = document.getElementById('exportBtn');
+
+    elCoordList = document.getElementById('coordinatorsList');
+    elDocsList  = document.getElementById('doctorsList');
 
     elEditorName = document.getElementById('editorName');
-    elLiveBadge = document.getElementById('liveBadge');
+    elLiveBadge  = document.getElementById('liveBadge');
     elLiveStatus = document.getElementById('liveStatus');
     elScheduleForm = document.getElementById('scheduleForm');
     elSave = document.getElementById('saveBtn');
     elDelete = document.getElementById('deleteBtn');
 
     elBottomSheet = document.getElementById('bottomSheet');
-    elOpenSheet = document.getElementById('openSheetBtn');
-    elCloseSheet = document.getElementById('closeSheetBtn');
+    elOpenSheet   = document.getElementById('openSheetBtn');
+    elCloseSheet  = document.getElementById('closeSheetBtn');
+    elCompactToggle = document.getElementById('compactToggle');
   }
 
   // Reloj + refresco de indicadores
@@ -66,45 +71,59 @@
     if (elClock) elClock.textContent = now.timeString;
     if (now.seconds!==lastSecond){
       lastSecond=now.seconds;
-      renderPeopleList();
+      renderPeopleLists();
       if (selectedId) updateEditorHeader();
     }
   }
 
-  // Lista de personas (al centro)
   function personNode(person){
     const item=document.createElement('div');
     item.className='person-item'+(person.id===selectedId?' active':'');
     item.setAttribute('role','listitem');
+
     const ind=document.createElement('span');
     const active=isPersonActiveNow(person);
     ind.className='indicator '+(active?'on':'off');
     ind.title=active?'Activo ahora':'Inactivo ahora';
+
     const name=document.createElement('div'); name.textContent=person.nombre;
     const hint=document.createElement('span'); hint.className='helper'; hint.textContent='editar';
+
     item.appendChild(ind); item.appendChild(name); item.appendChild(hint);
     item.addEventListener('click',()=>{ selectPerson(person.id); openSheet(); });
     return item;
   }
-  function renderPeopleList(){
-    if (!elPeopleList) return;
+
+  function renderPeopleLists(){
     const q=(elSearch.value||'').trim().toLowerCase();
-    elPeopleList.innerHTML='';
+    elCoordList.innerHTML = '';
+    elDocsList.innerHTML  = '';
+
     DB.people
-      .filter(p=>!q||p.nombre.toLowerCase().includes(q))
+      .filter(p=>!q || p.nombre.toLowerCase().includes(q))
       .sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'))
-      .forEach(p=>elPeopleList.appendChild(personNode(p)));
+      .forEach(p=>{
+        const node = personNode(p);
+        if ((p.role||'').toLowerCase()==='coordinador') elCoordList.appendChild(node);
+        else elDocsList.appendChild(node);
+      });
+
+    // Modo compacto automático si hay muchas tarjetas o pantalla pequeña
+    const cardsCount = DB.people.length;
+    const shouldCompact = cardsCount >= 12 || window.innerWidth < 768;
+    document.body.classList.toggle('compact', shouldCompact || _compactForced);
+    if (elCompactToggle) elCompactToggle.textContent = document.body.classList.contains('compact') ? 'Expandir' : 'Compactar';
   }
 
   // Bottom sheet (editor)
   function openSheet(){ elBottomSheet.classList.add('open'); elBottomSheet.setAttribute('aria-hidden','false'); }
   function closeSheet(){ elBottomSheet.classList.remove('open'); elBottomSheet.setAttribute('aria-hidden','true'); }
 
-  function selectPerson(id){ selectedId=id; renderPeopleList(); buildEditor(); }
+  function selectPerson(id){ selectedId=id; renderPeopleLists(); buildEditor(); }
   function updateEditorHeader(){
     const person=DB.people.find(p=>p.id===selectedId); if(!person) return;
     const active=isPersonActiveNow(person);
-    elEditorName.textContent=person.nombre;
+    elEditorName.textContent=person.nombre + (person.role ? ` · ${capitalize(person.role)}` : '');
     elLiveStatus.textContent=active?'ACTIVO':'INACTIVO';
     elLiveBadge.style.borderColor=active?'var(--ok)':'var(--bad)';
   }
@@ -136,36 +155,93 @@
   }
 
   // Persistencia
-  function saveTemp(){} // memoria (los cambios de inputs ya mutan el objeto en RAM)
-  function saveCurrent(){ saveDB(DB); renderPeopleList(); updateEditorHeader(); }
+  function saveTemp(){} // cambios ya mutan el objeto en memoria
+  function saveCurrent(){ saveDB(DB); renderPeopleLists(); updateEditorHeader(); }
 
-  // CRUD
+  // CRUD con rol
   function addPerson(){
     const nombre=prompt('Nombre de la nueva persona:');
     if(!nombre||!nombre.trim()) return;
+    let role = prompt('Rol (coordinador/medico):','medico') || '';
+    role = role.trim().toLowerCase();
+    if (!['coordinador','medico'].includes(role)) {
+      alert('Rol inválido. Usa: coordinador o medico.');
+      return;
+    }
     const empty=Array.from({length:7},()=>({shifts:[]}));
-    const id=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():('id-'+Math.random().toString(36).slice(2));
-    const person={ id, nombre:nombre.trim(), horario:empty };
-    DB.people.push(person); saveDB(DB); renderPeopleList(); selectPerson(person.id); openSheet();
+    const id = (window.crypto&&crypto.randomUUID)?crypto.randomUUID():('id-'+Math.random().toString(36).slice(2));
+    const person={ id, nombre:nombre.trim(), role, horario:empty };
+    DB.people.push(person); saveDB(DB); renderPeopleLists(); selectPerson(person.id); openSheet();
   }
   function deleteCurrent(){
     if(!selectedId) return; const person=DB.people.find(p=>p.id===selectedId); if(!person) return;
     if(!confirm(`¿Eliminar a \"${person.nombre}\"? Esta acción no se puede deshacer.`)) return;
     DB.people = DB.people.filter(p=>p.id!==selectedId); saveDB(DB);
-    selectedId=null; closeSheet(); renderPeopleList();
+    selectedId=null; closeSheet(); renderPeopleLists();
   }
+
+  // ===== Modo compacto toggle =====
+  let _compactForced = false;
+  function toggleCompact(){
+    _compactForced = !_compactForced;
+    renderPeopleLists();
+  }
+
+  // ===== Exportar a db.js con datos actuales (embed en código) =====
+  function exportDBasJS(){
+    // Construimos un db.js válido como el actual, con defaultDB = DB actual
+    const safeJson = JSON.stringify(DB, null, 2);
+    const content =
+`/*
+  db.js (generado desde la app) — incluye los datos actuales en defaultDB
+  Guarda este archivo como db.js y reemplaza el existente.
+*/
+(function(){
+  const STORAGE_KEY = '${STORAGE_KEY}';
+  function safeUUID(){ if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); return 'id-' + Math.random().toString(36).slice(2) + Date.now().toString(36); }
+
+  // defaultDB generado:
+  const defaultDB = ${safeJson};
+
+  function loadDB(){
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return JSON.parse(JSON.stringify(defaultDB));
+    try { return JSON.parse(raw); } catch { return JSON.parse(JSON.stringify(defaultDB)); }
+  }
+  function saveDB(db){ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
+  window.DB_API = { STORAGE_KEY, defaultDB, loadDB, saveDB };
+})();`;
+
+    const blob = new Blob([content], { type: 'application/javascript;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'db.js';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+  }
+
+  // Utils
+  function capitalize(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
 
   // Init
   function init(){
     cacheDom();
     renderClock(); setInterval(renderClock, 500);
-    elSearch.addEventListener('input', renderPeopleList);
+
+    elSearch.addEventListener('input', renderPeopleLists);
     elAdd.addEventListener('click', addPerson);
+    elExport.addEventListener('click', exportDBasJS);
+
     elSave.addEventListener('click', saveCurrent);
     elDelete.addEventListener('click', deleteCurrent);
+
     elOpenSheet.addEventListener('click', openSheet);
     elCloseSheet.addEventListener('click', closeSheet);
-    renderPeopleList();
+    elCompactToggle.addEventListener('click', toggleCompact);
+
+    renderPeopleLists();
   }
   if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
