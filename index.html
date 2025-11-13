@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Portal de Horarios – CDMX</title>
+  <title>Portal de Horarios – CDMX / Quintana Roo</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -18,12 +18,19 @@
 
       <div class="brand" title="Gestión de horarios">
         <span class="dot" aria-hidden="true"></span>
-        <span>Portal de Horarios</span>
+        <span>Horarios de atención</span>
       </div>
 
+      <!-- Dos relojes: CDMX y Cancún -->
       <div class="clock" aria-live="polite">
-        <span id="clock-time">--:--:--</span>
-        <small>CDMX</small>
+        <div class="clock-item">
+          <span id="clock-time-cdmx">--:--:--</span>
+          <small>CDMX</small>
+        </div>
+        <div class="clock-item">
+          <span id="clock-time-cancun">--:--:--</span>
+          <small>QUINTANA ROO</small>
+        </div>
       </div>
     </header>
 
@@ -33,7 +40,6 @@
         <div class="search-add center-bar">
           <input id="searchInput" type="text" placeholder="Buscar personal…" aria-label="Buscar personal" />
           <button id="addBtn" class="btn btn-primary" type="button">Agregar</button>
-          <button id="exportBtn" class="btn" type="button" title="Exporta los datos actuales a un archivo db.js">Exportar db.js</button>
         </div>
 
         <!-- Sección: Coordinadores -->
@@ -47,7 +53,8 @@
           <h3 class="section-title">Médicos</h3>
           <div class="people-grid" id="doctorsList" role="list" aria-label="Listado de médicos"></div>
           <p class="muted helper-center" style="margin-top:12px">
-            <span class="dot on small"></span> Activo ahora · <span class="dot off small"></span> Inactivo · Soporta tramos nocturnos
+            <span class="dot on small"></span> Activo ahora · 
+            <span class="dot off small"></span> Inactivo · Soporta tramos nocturnos
           </p>
         </section>
       </div>
@@ -75,7 +82,7 @@
   <!-- BOTÓN FLOTANTE -->
   <button id="openSheetBtn" class="fab" aria-label="Abrir editor" title="Abrir editor">⚙️</button>
 
-  <!-- Importante: db.js antes que app.js -->
+  <!-- Archivos JS -->
   <script src="db.js"></script>
   <script src="app.js"></script>
 </body>
